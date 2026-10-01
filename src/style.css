@@ -1,0 +1,145 @@
+/* Styles for ElevationProfile (ElevationProfile.ts). */
+.maptoolkit-elevation-profile {
+  --text: #333;
+  --muted: #666;
+  --grid: #aaa;
+  --fill: #002361;
+  --line: #002361;
+  --accent: #fa5538;
+  --badge-bg: none;
+  --font-family: "Mulish", "Helvetica Neue", Arial, sans-serif;
+}
+.maptoolkit-elevation-profile svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font-family);
+  user-select: none;
+}
+.maptoolkit-elevation-profile .grid-line-x {
+  stroke: none;
+}
+.maptoolkit-elevation-profile .grid-line-y {
+  stroke: var(--grid);
+  stroke-width: 1;
+  stroke-opacity: 1;
+  stroke-dasharray: 2 20;
+}
+.maptoolkit-elevation-profile .axis-label {
+  fill: var(--text);
+  font-size: 18px;
+}
+.maptoolkit-elevation-profile .area {
+  fill: var(--fill);
+  fill-opacity: 0.1;
+}
+.maptoolkit-elevation-profile .line {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 5;
+  stroke: #002361;
+  stroke-opacity: 0.8;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.maptoolkit-elevation-profile .marker {
+  fill: Canvas;
+  stroke: var(--line);
+  stroke-width: 2;
+}
+.maptoolkit-elevation-profile .marker-start,
+.maptoolkit-elevation-profile .marker-end,
+.maptoolkit-elevation-profile .marker-max {
+  display: none;
+}
+/* font-size must match markerFontSize in ElevationProfile.ts. */
+.maptoolkit-elevation-profile .marker-label {
+  fill: var(--text);
+  font-size: 18px;
+  /* Halo so the label stays readable over the line and grid. */
+  stroke: Canvas;
+  paint-order: stroke;
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+.maptoolkit-elevation-profile .hover-line {
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  display: none;
+}
+.maptoolkit-elevation-profile .selection-rect {
+  fill: var(--line);
+  fill-opacity: 0.15;
+  stroke: var(--line);
+  stroke-width: 1;
+  display: none;
+}
+.maptoolkit-elevation-profile .hover-dot {
+  fill: var(--accent);
+  r: 8;
+  stroke: #fff;
+  stroke-width: 2;
+  display: none;
+  filter: drop-shadow(0 0 3px var(--accent));
+}
+.maptoolkit-elevation-profile .hover-badge {
+  pointer-events: none;
+  display: none;
+}
+.maptoolkit-elevation-profile .hover-badge-bg {
+  fill: var(--badge-bg);
+  stroke-width: 0;
+  vector-effect: non-scaling-stroke;
+}
+/* font-size must match badge.fontSize in ElevationProfile.ts. */
+.maptoolkit-elevation-profile .hover-badge-text {
+  fill: var(--text);
+  font-size: 20px;
+  stroke: rgba(255, 255, 255, 0.8);
+  paint-order: stroke;
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+.maptoolkit-elevation-profile .hover-badge-dot {
+  stroke: rgba(255, 255, 255, 0.8);
+  r: 9;
+  stroke-width: 2;
+}
+/* Section bars and badge dots. Colors per value via --section-color on
+   .section-<id>-<value>, values without a rule use the fallback.
+   A whole bar can be targeted with .section-<id>. */
+.maptoolkit-elevation-profile .section-value {
+  fill: var(--section-color, #9e9e9e);
+}
+/* Default surface colors. */
+.maptoolkit-elevation-profile .section-surface-asphalt {
+  --section-color: #2f4858;
+}
+.maptoolkit-elevation-profile .section-surface-paved {
+  --section-color: #847467;
+}
+.maptoolkit-elevation-profile .section-surface-unpaved {
+  --section-color: #b9a89b;
+}
+.maptoolkit-elevation-profile .section-surface-natural {
+  --section-color: #643800;
+}
+.maptoolkit-elevation-profile .section-surface-alpine {
+  --section-color: #208257;
+}
+.maptoolkit-elevation-profile .section-surface-other {
+  --section-color: #816f95;
+}
+.maptoolkit-elevation-profile .section-highway-road {
+  --section-color: #5c5c5c;
+}
+.maptoolkit-elevation-profile .section-highway-street {
+  --section-color: #8a7f75;
+}
+.maptoolkit-elevation-profile .section-highway-path {
+  --section-color: #c29b62;
+}
+.maptoolkit-elevation-profile .section-highway-pedestrian {
+  --section-color: #6f8fae;
+}

@@ -1,0 +1,67 @@
+{
+  "name": "@maptoolkit/elevation-profile",
+  "version": "1.0.0",
+  "description": "A dependency-free SVG elevation profile for 3D GeoJSON lines, with hover, drag selection and optional section bars.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maptoolkit/elevation-profile.git"
+  },
+  "homepage": "https://github.com/maptoolkit/elevation-profile#readme",
+  "bugs": {
+    "url": "https://github.com/maptoolkit/elevation-profile/issues"
+  },
+  "type": "module",
+  "module": "./dist/elevation-profile.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/elevation-profile.js"
+    },
+    "./style.css": "./dist/elevation-profile.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": [
+    "*.css"
+  ],
+  "scripts": {
+    "dev": "vite --config demo/vite.config.mts",
+    "build": "vite build",
+    "build:demo": "vite build --config demo/vite.config.mts",
+    "preview": "vite preview --config demo/vite.config.mts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "npm run build && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^3.0.3",
+    "@eslint/js": "^10.0.1",
+    "@microsoft/api-extractor": "^7.59.1",
+    "@types/node": "^26.5.1",
+    "eslint": "^10.10.0",
+    "eslint-config-prettier": "^10.1.8",
+    "jsdom": "^30.0.1",
+    "prettier": "^3.9.6",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.0",
+    "vite": "^8.3.0",
+    "vite-plugin-dts": "^5.1.0",
+    "vitest": "^5.0.1"
+  },
+  "keywords": [
+    "elevation",
+    "profile"
+  ],
+  "author": "",
+  "license": "BSD-3-Clause"
+}

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>elevation-profile demo</title>
+    <style>
+      #profile {
+        width: 720px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div id="profile"></div>
+    </div>
+    <script type="module">
+      import "../src/style.css";
+      import { ElevationProfile } from "../src/index.ts";
+      import geojson from "./example.geojson?raw";
+
+      new ElevationProfile("profile", { units: "metric" }).render(JSON.parse(geojson));
+    </script>
+  </body>
+</html>
