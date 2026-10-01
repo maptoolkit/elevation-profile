@@ -163,38 +163,40 @@ Distances are in meters, or feet with `units: "imperial"`, so values from events
 
 ## Styling
 
-The constructor adds the class `maptoolkit-elevation-profile` to the container; all styles in `style.css` are scoped under it. Colors and font are CSS custom properties:
+The constructor adds the class `maptoolkit-elevation-profile` to the container; all styles in `style.css` are scoped under it. All classes, ids and CSS custom properties are prefixed with `maptoolkit-elevation-profile-`, so they don't collide with the styles of the page. Colors and font are custom properties:
 
 ```css
 .maptoolkit-elevation-profile {
-  --text: #333;
-  --muted: #666;
-  --grid: #aaa;
-  --fill: #002361;
-  --line: #002361;
-  --accent: #fa5538;
-  --badge-bg: none;
-  --font-family: "Mulish", "Helvetica Neue", Arial, sans-serif;
+  --maptoolkit-elevation-profile-text: #333;
+  --maptoolkit-elevation-profile-muted: #666;
+  --maptoolkit-elevation-profile-grid: #aaa;
+  --maptoolkit-elevation-profile-fill: #002361;
+  --maptoolkit-elevation-profile-line: #002361;
+  --maptoolkit-elevation-profile-accent: #fa5538;
+  --maptoolkit-elevation-profile-badge-bg: none;
+  --maptoolkit-elevation-profile-font-family: "Mulish", "Helvetica Neue", Arial, sans-serif;
 }
 ```
 
-| Class                                                          | Element                                                                   |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `.line`, `.area`                                               | Profile line and the area below it.                                       |
-| `.grid-line-x`, `.grid-line-y`, `.axis-line-x`, `.axis-line-y` | Grid lines; the first one of each direction is also the axis.             |
-| `.axis-label-x`, `.axis-label-y`                               | Axis labels.                                                              |
-| `.marker-start`, `.marker-end`, `.marker-max`                  | Marker groups, each with `.marker` and `.marker-label`.                   |
-| `.hover-line`, `.hover-dot`                                    | Hover point, following the mouse.                                         |
-| `.hover-badge`                                                 | Badge with `.hover-badge-bg`, `.hover-badge-text` and `.hover-badge-dot`. |
-| `.selection-rect`                                              | Drag selection.                                                           |
-| `.section-<id>`                                                | One section bar.                                                          |
-| `.section-value.section-<id>-<value>`                          | A bar segment and the matching badge dot.                                 |
+Classes, shown without the `maptoolkit-elevation-profile-` prefix:
 
-Section colors are set per value via `--section-color`; values without a rule use the fallback `#9e9e9e`. Characters outside `[A-Za-z0-9_-]` in ids and values become `-` in class names.
+| Class                                                      | Element                                                                |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `line`, `area`                                             | Profile line and the area below it.                                    |
+| `grid-line-x`, `grid-line-y`, `axis-line-x`, `axis-line-y` | Grid lines; the first one of each direction is also the axis.          |
+| `axis-label-x`, `axis-label-y`                             | Axis labels.                                                           |
+| `marker-start`, `marker-end`, `marker-max`                 | Marker groups, each with `marker` and `marker-label`.                  |
+| `hover-line`, `hover-dot`                                  | Hover point, following the mouse.                                      |
+| `hover-badge`                                              | Badge with `hover-badge-bg`, `hover-badge-text` and `hover-badge-dot`. |
+| `selection-rect`                                           | Drag selection.                                                        |
+| `section-<id>`                                             | One section bar.                                                       |
+| `section-value`, `section-<id>-<value>`                    | A bar segment and the matching badge dot.                              |
+
+Section colors are set per value via `--maptoolkit-elevation-profile-section-color`; values without a rule use the fallback `#9e9e9e`. Characters outside `[A-Za-z0-9_-]` in ids and values become `-` in class names.
 
 ```css
-.maptoolkit-elevation-profile .section-surface-gravel {
-  --section-color: #b9a89b;
+.maptoolkit-elevation-profile .maptoolkit-elevation-profile-section-surface-gravel {
+  --maptoolkit-elevation-profile-section-color: #b9a89b;
 }
 ```
 

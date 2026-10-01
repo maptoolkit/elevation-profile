@@ -74,7 +74,7 @@ function create(options: Partial<ElevationProfileOptions> = {}, feature = lineFe
 const $ = <T extends Element = SVGElement>(selector: string) => document.querySelector<T>(`#profile ${selector}`)!;
 const $$ = <T extends Element = SVGElement>(selector: string) => Array.from(document.querySelectorAll<T>(`#profile ${selector}`));
 const texts = (selector: string) => $$(selector).map((el) => el.textContent);
-const badgeLines = () => texts(".hover-badge-text tspan");
+const badgeLines = () => texts(".maptoolkit-elevation-profile-hover-badge-text tspan");
 
 // clientX for a distance in meters on a 1000 m profile.
 const clientX = (meter: number) => PLOT_LEFT + (meter / 1000) * PLOT_WIDTH;
@@ -85,15 +85,15 @@ function mouse(target: EventTarget, type: string, meter: number, clientY = 50): 
   return evt;
 }
 
-const hover = (meter: number) => mouse($(".hover-capture"), "mousemove", meter);
+const hover = (meter: number) => mouse($(".maptoolkit-elevation-profile-hover-capture"), "mousemove", meter);
 
 function click(meter: number) {
-  mouse($(".hover-capture"), "mousedown", meter);
+  mouse($(".maptoolkit-elevation-profile-hover-capture"), "mousedown", meter);
   mouse(window, "mouseup", meter);
 }
 
 function drag(from: number, to: number) {
-  mouse($(".hover-capture"), "mousedown", from);
+  mouse($(".maptoolkit-elevation-profile-hover-capture"), "mousedown", from);
   mouse(window, "mousemove", to);
   mouse(window, "mouseup", to);
 }
@@ -158,18 +158,18 @@ describe("not rendered container", () => {
     const profile = new ElevationProfile(element);
     profile.render(lineFeature());
     profile.showHoverAt(300);
-    expect(element.querySelector<SVGLineElement>(".hover-line")!.style.display).not.toBe("block");
+    expect(element.querySelector<SVGLineElement>(".maptoolkit-elevation-profile-hover-line")!.style.display).not.toBe("block");
     expect(profile.setSelection(250, 750)).toBeNull();
-    expect(element.querySelector<SVGRectElement>(".selection-rect")!.style.display).not.toBe("block");
+    expect(element.querySelector<SVGRectElement>(".maptoolkit-elevation-profile-selection-rect")!.style.display).not.toBe("block");
   });
 
   it("ignores showHoverAt and setSelection inside display: none", () => {
     document.body.innerHTML = '<div style="display: none"><div id="profile"></div></div>';
     const profile = create();
     profile.showHoverAt(300);
-    expect($<SVGLineElement>(".hover-line").style.display).not.toBe("block");
+    expect($<SVGLineElement>(".maptoolkit-elevation-profile-hover-line").style.display).not.toBe("block");
     expect(profile.setSelection(250, 750)).toBeNull();
-    expect($<SVGRectElement>(".selection-rect").style.display).not.toBe("block");
+    expect($<SVGRectElement>(".maptoolkit-elevation-profile-selection-rect").style.display).not.toBe("block");
   });
 
   it("keeps a selection made while visible and allows clearing it while hidden", () => {
@@ -177,9 +177,9 @@ describe("not rendered container", () => {
     profile.setSelection(250, 750);
     const element = document.getElementById("profile")!;
     element.style.display = "none";
-    expect($<SVGRectElement>(".selection-rect").style.display).toBe("block");
+    expect($<SVGRectElement>(".maptoolkit-elevation-profile-selection-rect").style.display).toBe("block");
     profile.clearSelection();
-    expect($<SVGRectElement>(".selection-rect").style.display).toBe("none");
+    expect($<SVGRectElement>(".maptoolkit-elevation-profile-selection-rect").style.display).toBe("none");
   });
 });
 
@@ -193,29 +193,29 @@ describe("render", () => {
 
   it("renders metric axis labels", () => {
     create();
-    expect(texts(".axis-label-y").every((t) => / m$/.test(t!))).toBe(true);
-    expect(texts(".axis-label-x").every((t) => / km$/.test(t!))).toBe(true);
-    expect(texts(".axis-label-x")[0]).toBe("0 km");
+    expect(texts(".maptoolkit-elevation-profile-axis-label-y").every((t) => / m$/.test(t!))).toBe(true);
+    expect(texts(".maptoolkit-elevation-profile-axis-label-x").every((t) => / km$/.test(t!))).toBe(true);
+    expect(texts(".maptoolkit-elevation-profile-axis-label-x")[0]).toBe("0 km");
   });
 
   it("renders imperial axis labels", () => {
     create({ units: "imperial" });
-    expect(texts(".axis-label-y").every((t) => / ft$/.test(t!))).toBe(true);
-    expect(texts(".axis-label-x").every((t) => / mi$/.test(t!))).toBe(true);
+    expect(texts(".maptoolkit-elevation-profile-axis-label-y").every((t) => / ft$/.test(t!))).toBe(true);
+    expect(texts(".maptoolkit-elevation-profile-axis-label-x").every((t) => / mi$/.test(t!))).toBe(true);
   });
 
   it("renders start, end and max markers", () => {
     create();
-    expect(texts(".marker-start .marker-label")).toEqual(["100 m"]);
-    expect(texts(".marker-end .marker-label")).toEqual(["160 m"]);
-    expect(texts(".marker-max .marker-label")).toEqual(["180 m"]);
+    expect(texts(".maptoolkit-elevation-profile-marker-start .maptoolkit-elevation-profile-marker-label")).toEqual(["100 m"]);
+    expect(texts(".maptoolkit-elevation-profile-marker-end .maptoolkit-elevation-profile-marker-label")).toEqual(["160 m"]);
+    expect(texts(".maptoolkit-elevation-profile-marker-max .maptoolkit-elevation-profile-marker-label")).toEqual(["180 m"]);
   });
 
   it("skips the max marker next to start or end", () => {
     const coords = coordinates.map(([lng, lat], i) => [lng, lat, i === 4 ? 200 : 100]);
     create({}, { geometry: { type: "LineString", coordinates: coords }, properties: { length: 1000 } });
-    expect($$(".marker-max")).toHaveLength(0);
-    expect(texts(".marker-end .marker-label")).toEqual(["200 m"]);
+    expect($$(".maptoolkit-elevation-profile-marker-max")).toHaveLength(0);
+    expect(texts(".maptoolkit-elevation-profile-marker-end .maptoolkit-elevation-profile-marker-label")).toEqual(["200 m"]);
   });
 
   it("replaces previous content", () => {
@@ -224,17 +224,25 @@ describe("render", () => {
     expect($$("svg")).toHaveLength(1);
   });
 
-  it("uses a unique clip path per instance", () => {
+  it("uses a unique, prefixed clip path per instance", () => {
     document.body.innerHTML = '<div id="a"></div><div id="b"></div>';
     new ElevationProfile("a").render(lineFeature());
     new ElevationProfile("b").render(lineFeature());
     const ids = Array.from(document.querySelectorAll("clipPath")).map((el) => el.id);
     expect(new Set(ids).size).toBe(2);
+    ids.forEach((id) => expect(id).toMatch(/^maptoolkit-elevation-profile-clip-\d+$/));
+  });
+
+  it("prefixes all classes", () => {
+    create({}, lineFeature({ sections: [{ id: "surface", values: [{ from: 0, to: 1, value: "asphalt" }] }] }));
+    const classes = $$("[class]").flatMap((el) => el.getAttribute("class")!.split(" "));
+    expect(classes.length).toBeGreaterThan(0);
+    classes.forEach((name) => expect(name).toMatch(/^maptoolkit-elevation-profile-/));
   });
 });
 
 describe("sections", () => {
-  const segmentClasses = (id: string) => $$(`.section-${id} rect`).map((el) => el.getAttribute("class"));
+  const segmentClasses = (id: string) => $$(`.maptoolkit-elevation-profile-section-${id} rect`).map((el) => el.getAttribute("class"));
 
   it("renders one bar per section id", () => {
     create(
@@ -246,9 +254,9 @@ describe("sections", () => {
         ],
       }),
     );
-    expect($$(".section")).toHaveLength(2);
-    expect(segmentClasses("surface")).toEqual(["section-value section-surface-asphalt"]);
-    expect(segmentClasses("highway")).toEqual(["section-value section-highway-path"]);
+    expect($$(".maptoolkit-elevation-profile-section")).toHaveLength(2);
+    expect(segmentClasses("surface")).toEqual(["maptoolkit-elevation-profile-section-value maptoolkit-elevation-profile-section-surface-asphalt"]);
+    expect(segmentClasses("highway")).toEqual(["maptoolkit-elevation-profile-section-value maptoolkit-elevation-profile-section-highway-path"]);
   });
 
   it("fills gaps with other", () => {
@@ -267,9 +275,9 @@ describe("sections", () => {
       }),
     );
     expect(segmentClasses("surface")).toEqual([
-      "section-value section-surface-asphalt",
-      "section-value section-surface-other",
-      "section-value section-surface-asphalt",
+      "maptoolkit-elevation-profile-section-value maptoolkit-elevation-profile-section-surface-asphalt",
+      "maptoolkit-elevation-profile-section-value maptoolkit-elevation-profile-section-surface-other",
+      "maptoolkit-elevation-profile-section-value maptoolkit-elevation-profile-section-surface-asphalt",
     ]);
   });
 
@@ -289,13 +297,16 @@ describe("sections", () => {
         ],
       }),
     );
-    expect(segmentClasses("surface")).toEqual(["section-value section-surface-asphalt", "section-value section-surface-gravel"]);
+    expect(segmentClasses("surface")).toEqual([
+      "maptoolkit-elevation-profile-section-value maptoolkit-elevation-profile-section-surface-asphalt",
+      "maptoolkit-elevation-profile-section-value maptoolkit-elevation-profile-section-surface-gravel",
+    ]);
   });
 
   it("maps ids and values to CSS-safe class names", () => {
     create({}, lineFeature({ sections: [{ id: "road type", values: [{ from: 0, to: 1, value: "a/b" }] }] }));
-    expect($$(".section-road-type")).toHaveLength(1);
-    expect(segmentClasses("road-type")).toEqual(["section-value section-road-type-a-b"]);
+    expect($$(".maptoolkit-elevation-profile-section-road-type")).toHaveLength(1);
+    expect(segmentClasses("road-type")).toEqual(["maptoolkit-elevation-profile-section-value maptoolkit-elevation-profile-section-road-type-a-b"]);
   });
 
   it("joins MultiLineString parts by id, relative to each part", () => {
@@ -325,11 +336,11 @@ describe("sections", () => {
         },
       },
     );
-    expect($$(".section")).toHaveLength(1);
+    expect($$(".maptoolkit-elevation-profile-section")).toHaveLength(1);
     expect(segmentClasses("surface")).toEqual([
-      "section-value section-surface-asphalt",
-      "section-value section-surface-other",
-      "section-value section-surface-gravel",
+      "maptoolkit-elevation-profile-section-value maptoolkit-elevation-profile-section-surface-asphalt",
+      "maptoolkit-elevation-profile-section-value maptoolkit-elevation-profile-section-surface-other",
+      "maptoolkit-elevation-profile-section-value maptoolkit-elevation-profile-section-surface-gravel",
     ]);
     const values: string[] = [];
     profile.on("hover", (e) => values.push(e.sections.surface));
@@ -369,10 +380,12 @@ describe("hover badge", () => {
   it("shows a dot with section classes for section lines only", () => {
     const profile = create({}, sectioned());
     profile.showHoverAt(300);
-    const dots = $$<SVGCircleElement>(".hover-badge-dot");
+    const dots = $$<SVGCircleElement>(".maptoolkit-elevation-profile-hover-badge-dot");
     expect(dots[0].style.display).toBe("none");
     expect(dots[1].style.display).toBe("block");
-    expect(dots[1].getAttribute("class")).toBe("hover-badge-dot section-value section-surface-asphalt");
+    expect(dots[1].getAttribute("class")).toBe(
+      "maptoolkit-elevation-profile-hover-badge-dot maptoolkit-elevation-profile-section-value maptoolkit-elevation-profile-section-surface-asphalt",
+    );
   });
 
   it("shows ascent and descent for a selection", () => {
@@ -402,11 +415,11 @@ describe("events", () => {
   it("fires hoverend once", () => {
     const profile = create();
     const spies = spyAll(profile);
-    mouse($(".hover-capture"), "mouseleave", 0);
+    mouse($(".maptoolkit-elevation-profile-hover-capture"), "mouseleave", 0);
     expect(spies.hoverend).not.toHaveBeenCalled();
     hover(300);
-    mouse($(".hover-capture"), "mouseleave", 0);
-    mouse($(".hover-capture"), "mouseleave", 0);
+    mouse($(".maptoolkit-elevation-profile-hover-capture"), "mouseleave", 0);
+    mouse($(".maptoolkit-elevation-profile-hover-capture"), "mouseleave", 0);
     expect(spies.hoverend).toHaveBeenCalledTimes(1);
   });
 
@@ -446,7 +459,7 @@ describe("events", () => {
   it("treats a move of up to 3 px as a click", () => {
     const profile = create();
     const spies = spyAll(profile);
-    mouse($(".hover-capture"), "mousedown", 500);
+    mouse($(".maptoolkit-elevation-profile-hover-capture"), "mousedown", 500);
     window.dispatchEvent(new MouseEvent("mousemove", { clientX: clientX(500) + 2, clientY: 51 }));
     mouse(window, "mouseup", 500);
     expect(spies.selection).not.toHaveBeenCalled();
@@ -505,7 +518,7 @@ describe("methods", () => {
   it("setSelection returns ascent and descent and shows the selection", () => {
     const profile = create();
     expect(profile.setSelection(750, 250)).toEqual({ ascent: 60, descent: 30 });
-    expect($<SVGRectElement>(".selection-rect").style.display).toBe("block");
+    expect($<SVGRectElement>(".maptoolkit-elevation-profile-selection-rect").style.display).toBe("block");
   });
 
   it("setSelection clamps to the profile", () => {
@@ -516,18 +529,18 @@ describe("methods", () => {
   it("showHoverAt shows the hover point, hideHover hides it", () => {
     const profile = create();
     profile.showHoverAt(300);
-    expect($<SVGLineElement>(".hover-line").style.display).toBe("block");
-    expect($<SVGGElement>(".hover-badge").style.display).toBe("block");
+    expect($<SVGLineElement>(".maptoolkit-elevation-profile-hover-line").style.display).toBe("block");
+    expect($<SVGGElement>(".maptoolkit-elevation-profile-hover-badge").style.display).toBe("block");
     profile.hideHover();
-    expect($<SVGLineElement>(".hover-line").style.display).toBe("none");
-    expect($<SVGGElement>(".hover-badge").style.display).toBe("none");
+    expect($<SVGLineElement>(".maptoolkit-elevation-profile-hover-line").style.display).toBe("none");
+    expect($<SVGGElement>(".maptoolkit-elevation-profile-hover-badge").style.display).toBe("none");
   });
 
   it("showHoverAt is ignored while a selection exists", () => {
     const profile = create();
     profile.setSelection(250, 750);
     profile.showHoverAt(300);
-    expect($<SVGLineElement>(".hover-line").style.display).toBe("none");
+    expect($<SVGLineElement>(".maptoolkit-elevation-profile-hover-line").style.display).toBe("none");
     expect(badgeLines()).toEqual(["+ 60 m", "- 30 m"]);
   });
 
@@ -535,7 +548,7 @@ describe("methods", () => {
     const profile = create();
     profile.setSelection(250, 750);
     profile.clearSelection();
-    expect($<SVGRectElement>(".selection-rect").style.display).toBe("none");
+    expect($<SVGRectElement>(".maptoolkit-elevation-profile-selection-rect").style.display).toBe("none");
     const spies = spyAll(profile);
     click(500);
     expect(spies.click).toHaveBeenCalledTimes(1);
@@ -610,6 +623,6 @@ describe("imperial", () => {
 
   it("formats marker labels in feet", () => {
     create({ units: "imperial" });
-    expect(texts(".marker-start .marker-label")).toEqual(["328 ft"]);
+    expect(texts(".maptoolkit-elevation-profile-marker-start .maptoolkit-elevation-profile-marker-label")).toEqual(["328 ft"]);
   });
 });

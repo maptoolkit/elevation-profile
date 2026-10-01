@@ -10,7 +10,9 @@
 // section below the plot, from/to as 0..1 of the line length. For a MultiLineString
 // one such array per part ([[...], [...]]), from/to relative to that part; sections
 // with the same id are joined into one bar.
-// Styling: .section-<id> (bar) and .section-<id>-<value> (segment and badge dot).
+// Styling: all classes, ids and CSS custom properties are prefixed with maptoolkit-elevation-profile-,
+// e.g. .maptoolkit-elevation-profile-section-<id> (bar) and
+// .maptoolkit-elevation-profile-section-<id>-<value> (segment and badge dot).
 // Badge labels: options.locale["<id>.<value>"], else the raw value.
 //
 // Events (profile.on/off/once), all distances and elevations in meters (feet for imperial):
@@ -59,6 +61,11 @@ export const defaultElevationProfileOptions: ElevationProfileOptions = {
 };
 
 type Position = number[];
+
+// Prefix of all CSS classes and ids, so styles of the host page don't collide with them.
+const PREFIX = "maptoolkit-elevation-profile";
+// Prefixed class names, e.g. cls("line", "area") -> "maptoolkit-elevation-profile-line maptoolkit-elevation-profile-area".
+const cls = (...names: string[]) => names.map((name) => `${PREFIX}-${name}`).join(" ");
 
 export interface SectionValueInput {
   from?: number;
@@ -234,14 +241,14 @@ export class ElevationProfile {
     if (!element) throw new Error(`Element #${container} nicht gefunden.`);
     this.container = element;
     // Scopes the styles in style.css.
-    this.container.classList.add("maptoolkit-elevation-profile");
+    this.container.classList.add(PREFIX);
     const { units } = { ...defaultElevationProfileOptions, ...options };
     const locale = { ...defaultElevationProfileOptions.locale, ...options.locale };
     const unit = ElevationProfile.UNIT_SYSTEMS[units];
     if (!unit) throw new Error(`Unbekanntes Masssystem "${units}".`);
     this.unit = unit;
     this.locale = locale;
-    this.clipId = `elevationClip-${++ElevationProfile.instanceCount}`;
+    this.clipId = `${PREFIX}-clip-${++ElevationProfile.instanceCount}`;
   }
 
   // Renders a 3D GeoJSON Feature, replacing previous content.
@@ -322,9 +329,9 @@ export class ElevationProfile {
     return String(str).replace(/[^A-Za-z0-9_-]/g, "-");
   }
 
-  // Classes of a bar segment and its badge dot. Colors come from .section-<id>-<value> in the CSS.
+  // Classes of a bar segment and its badge dot. Colors come from ...-section-<id>-<value> in the CSS.
   private static sectionValueClass(id: string, value: string): string {
-    return `section-value section-${ElevationProfile.cssName(id)}-${ElevationProfile.cssName(value)}`;
+    return cls("section-value", `section-${ElevationProfile.cssName(id)}-${ElevationProfile.cssName(value)}`);
   }
 
   // "Nice numbers" axis ticks (Heckbert).
@@ -481,7 +488,7 @@ export class ElevationProfile {
     const linePath = `M${linePoints.join(" L")}`;
 
     // Start, end and highest point with elevation label, each in a
-    // <g class="marker-start|marker-end|marker-max"> for separate styling.
+    // <g class="...-marker-start|-marker-end|-marker-max"> for separate styling.
     // The highest point is skipped if it is too close to start or end, so the labels don't overlap.
     const lastIdx = samples.length - 1;
     const maxIdx = samples.indexOf(elevMax);
@@ -504,9 +511,9 @@ export class ElevationProfile {
         const ly = above ? my - markerR - markerLabelGap : my + markerR + markerLabelGap;
         // Keep labels near the edges inside the plot.
         const anchor = mx < margin.left + 30 ? "start" : mx > width - margin.right - 30 ? "end" : "middle";
-        return `<g class="marker-${kind}">
-    <circle class="marker" cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="${markerR}" />
-    <text class="marker-label" x="${mx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchor}" dominant-baseline="${above ? "auto" : "hanging"}">${this.formatElevation(samples[i])}</text>
+        return `<g class="${cls(`marker-${kind}`)}">
+    <circle class="${cls("marker")}" cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="${markerR}" />
+    <text class="${cls("marker-label")}" x="${mx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchor}" dominant-baseline="${above ? "auto" : "hanging"}">${this.formatElevation(samples[i])}</text>
   </g>`;
       })
       .join("\n");
@@ -549,7 +556,7 @@ export class ElevationProfile {
       .map((section, i) => {
         const barY = margin.top + plotH + sectionBar.gap + i * (sectionBar.height + sectionBar.gap);
         const rects = barRects(section.runs, barY, (value) => ElevationProfile.sectionValueClass(section.id, value));
-        return `<g class="section section-${ElevationProfile.cssName(section.id)}">\n${rects}\n  </g>`;
+        return `<g class="${cls("section", `section-${ElevationProfile.cssName(section.id)}`)}">\n${rects}\n  </g>`;
       })
       .join("\n");
 
@@ -558,8 +565,8 @@ export class ElevationProfile {
       .map((t, i) => {
         const yy = y(t / elevFactor).toFixed(1);
         // The lowest line is the x axis.
-        return `<line class="grid-line grid-line-y${i === 0 ? " axis-line axis-line-x" : ""}" x1="${margin.left}" x2="${width - margin.right}" y1="${yy}" y2="${yy}" />
-          <text class="axis-label axis-label-y" x="${margin.left - 8}" y="${yy}" text-anchor="end" dominant-baseline="middle">${Math.round(t)} ${unit.elevation.unit}</text>`;
+        return `<line class="${cls("grid-line", "grid-line-y", ...(i === 0 ? ["axis-line", "axis-line-x"] : []))}" x1="${margin.left}" x2="${width - margin.right}" y1="${yy}" y2="${yy}" />
+          <text class="${cls("axis-label", "axis-label-y")}" x="${margin.left - 8}" y="${yy}" text-anchor="end" dominant-baseline="middle">${Math.round(t)} ${unit.elevation.unit}</text>`;
       })
       .join("\n");
 
@@ -568,8 +575,8 @@ export class ElevationProfile {
       .map((t, i) => {
         const xx = x(t / distFactor).toFixed(1);
         // The line at 0 is the y axis.
-        return `<line class="grid-line grid-line-x${i === 0 ? " axis-line axis-line-y" : ""}" x1="${xx}" x2="${xx}" y1="${margin.top}" y2="${margin.top + plotH}" />
-          <text class="axis-label axis-label-x" x="${xx}" y="${margin.top + plotH + barsHeight + 7}" text-anchor="middle" dominant-baseline="hanging">${t} ${unit.distance.unit}</text>`;
+        return `<line class="${cls("grid-line", "grid-line-x", ...(i === 0 ? ["axis-line", "axis-line-y"] : []))}" x1="${xx}" x2="${xx}" y1="${margin.top}" y2="${margin.top + plotH}" />
+          <text class="${cls("axis-label", "axis-label-x")}" x="${xx}" y="${margin.top + plotH + barsHeight + 7}" text-anchor="middle" dominant-baseline="hanging">${t} ${unit.distance.unit}</text>`;
       })
       .join("\n");
 
@@ -580,7 +587,7 @@ export class ElevationProfile {
         ? `<tspan x="${badge.right - badge.padX}" y="${badge.top + badge.padY + badge.fontSize}"></tspan>`
         : `<tspan x="${badge.right - badge.padX}" dy="${badge.lineHeight}"></tspan>`,
     ).join("");
-    const badgeDots = Array.from({ length: badgeLineCount }, () => `<circle class="hover-badge-dot" r="${badge.dotRadius}" />`).join("\n    ");
+    const badgeDots = Array.from({ length: badgeLineCount }, () => `<circle class="${cls("hover-badge-dot")}" r="${badge.dotRadius}" />`).join("\n    ");
 
     const svg = `
 <svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
@@ -591,18 +598,18 @@ export class ElevationProfile {
   </defs>
   ${gridLinesY}
   ${gridLinesX}
-  <path class="area" d="${areaPath}" />
-  <path class="line" d="${linePath}" />
+  <path class="${cls("area")}" d="${areaPath}" />
+  <path class="${cls("line")}" d="${linePath}" />
   ${sectionBars}
   ${markers}
-  <rect class="selection-rect" y="${margin.top}" height="${plotH}" clip-path="url(#${clipId})" />
-  <line class="hover-line" x1="0" x2="0" y1="${margin.top}" y2="${margin.top + plotH}" clip-path="url(#${clipId})" />
-  <circle class="hover-dot" r="4" />
-  <rect class="hover-capture" x="${margin.left}" y="${margin.top}" width="${plotW}" height="${plotH}" fill="transparent" style="cursor: default;" />
-  <g class="hover-badge">
-    <rect class="hover-badge-bg" rx="${badge.radius}" />
+  <rect class="${cls("selection-rect")}" y="${margin.top}" height="${plotH}" clip-path="url(#${clipId})" />
+  <line class="${cls("hover-line")}" x1="0" x2="0" y1="${margin.top}" y2="${margin.top + plotH}" clip-path="url(#${clipId})" />
+  <circle class="${cls("hover-dot")}" r="4" />
+  <rect class="${cls("hover-capture")}" x="${margin.left}" y="${margin.top}" width="${plotW}" height="${plotH}" fill="transparent" style="cursor: default;" />
+  <g class="${cls("hover-badge")}">
+    <rect class="${cls("hover-badge-bg")}" rx="${badge.radius}" />
     <!-- No whitespace between the tspans, it would add a trailing space to a line and shift it left. -->
-    <text class="hover-badge-text" text-anchor="end">${badgeTspans}</text>
+    <text class="${cls("hover-badge-text")}" text-anchor="end">${badgeTspans}</text>
     ${badgeDots}
   </g>
 </svg>`;
@@ -672,15 +679,15 @@ export class ElevationProfile {
 
   private setupInteraction(svgEl: SVGSVGElement, meta: SvgMeta): Interaction {
     const { margin, plotW, plotH, safeDistance, distances, samples, coordinates, yTicks, sections, badge } = meta;
-    const capture = svgEl.querySelector<SVGRectElement>(".hover-capture")!;
-    const hoverLine = svgEl.querySelector<SVGLineElement>(".hover-line")!;
-    const hoverDot = svgEl.querySelector<SVGCircleElement>(".hover-dot")!;
-    const selectionRect = svgEl.querySelector<SVGRectElement>(".selection-rect")!;
-    const badgeEl = svgEl.querySelector<SVGGElement>(".hover-badge")!;
-    const badgeBg = badgeEl.querySelector<SVGRectElement>(".hover-badge-bg")!;
-    const badgeText = badgeEl.querySelector<SVGTextElement>(".hover-badge-text")!;
+    const capture = svgEl.querySelector<SVGRectElement>(`.${cls("hover-capture")}`)!;
+    const hoverLine = svgEl.querySelector<SVGLineElement>(`.${cls("hover-line")}`)!;
+    const hoverDot = svgEl.querySelector<SVGCircleElement>(`.${cls("hover-dot")}`)!;
+    const selectionRect = svgEl.querySelector<SVGRectElement>(`.${cls("selection-rect")}`)!;
+    const badgeEl = svgEl.querySelector<SVGGElement>(`.${cls("hover-badge")}`)!;
+    const badgeBg = badgeEl.querySelector<SVGRectElement>(`.${cls("hover-badge-bg")}`)!;
+    const badgeText = badgeEl.querySelector<SVGTextElement>(`.${cls("hover-badge-text")}`)!;
     const badgeLines = Array.from(badgeText.querySelectorAll<SVGTSpanElement>("tspan"));
-    const badgeDots = Array.from(badgeEl.querySelectorAll<SVGCircleElement>(".hover-badge-dot"));
+    const badgeDots = Array.from(badgeEl.querySelectorAll<SVGCircleElement>(`.${cls("hover-badge-dot")}`));
     const nearestSampleIndex = ElevationProfile.nearestSampleIndex;
 
     // Right-aligned lines (one tspan each), each with an optional colored dot after the text.
@@ -694,7 +701,7 @@ export class ElevationProfile {
         tspan.setAttribute("x", String(line?.dotClass ? textRight - 2 * badge.dotRadius - badge.dotGap : textRight));
         const dot = badgeDots[i];
         if (line?.dotClass) {
-          dot.setAttribute("class", `hover-badge-dot ${line.dotClass}`);
+          dot.setAttribute("class", `${cls("hover-badge-dot")} ${line.dotClass}`);
           dot.setAttribute("cx", String(textRight - badge.dotRadius));
           dot.setAttribute("cy", String(badge.top + badge.padY + badge.fontSize + i * badge.lineHeight - badge.fontSize * 0.35));
         }
