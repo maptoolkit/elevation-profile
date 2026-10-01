@@ -1,6 +1,6 @@
 {
   "name": "@maptoolkit/elevation-profile",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A dependency-free SVG elevation profile for 3D GeoJSON lines, with hover, drag selection and optional section bars.",
   "repository": {
     "type": "git",
