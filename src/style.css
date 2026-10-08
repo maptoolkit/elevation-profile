@@ -69,10 +69,18 @@
   display: none;
 }
 .maptoolkit-elevation-profile .maptoolkit-elevation-profile-selection-rect {
-  fill: var(--maptoolkit-elevation-profile-line);
-  fill-opacity: 0.15;
-  stroke: var(--maptoolkit-elevation-profile-line);
-  stroke-width: 1;
+  fill: var(--maptoolkit-elevation-profile-accent);
+  fill-opacity: 0.4;
+  stroke: var(--maptoolkit-elevation-profile-accent);
+  stroke-width: 0;
+  display: none;
+}
+.maptoolkit-elevation-profile .maptoolkit-elevation-profile-selection-line {
+  fill: none;
+  stroke: var(--maptoolkit-elevation-profile-accent);;
+  stroke-width: 6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
   display: none;
 }
 .maptoolkit-elevation-profile .maptoolkit-elevation-profile-hover-dot {

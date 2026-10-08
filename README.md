@@ -24,7 +24,7 @@ const profile = new ElevationProfile("profile", { units: "metric" });
 profile.render(feature);
 ```
 
-The first argument is the container element or its id. The element may be added to the DOM after `render()`. The profile fills the container's width; its height follows from the aspect ratio of the SVG (900 × 320). Calling `render()` again replaces the profile and clears any selection.
+The first argument is the container element or its id. The element may be added to the DOM after `render()`. The profile fills the container's width; its height follows from the aspect ratio of the SVG (`width` × `height`, default 900 × 320). Calling `render()` again replaces the profile and clears any selection.
 
 ### Without a bundler
 
@@ -111,6 +111,8 @@ profile.render({
 | -------- | -------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `units`  | `"metric"` \| `"imperial"` | `"metric"` | Axis labels in m/km or ft/mi. With `"imperial"`, all lengths in events and methods are in feet instead of meters.                                                           |
 | `locale` | `Record<string, string>`   | see below  | Hover badge labels for section values, keyed `"<section id>.<value>"` with the raw values from the data. Merged with the defaults. Values without an entry are shown as is. |
+| `width`  | `number`                   | `900`      | Width of the SVG viewBox. Together with `height` it sets the aspect ratio. Fonts and margins are in viewBox units, so a smaller viewBox makes the text relatively larger.   |
+| `height` | `number`                   | `320`      | Height of the SVG viewBox.                                                                                                                                                  |
 
 The default `locale` has English labels for `surface.*` (`asphalt`, `paved`, `unpaved`, `natural`, `alpine`, `other`) and `highway.*` values, see `defaultElevationProfileOptions` in `src/ElevationProfile.ts`:
 
@@ -189,6 +191,7 @@ Classes, shown without the `maptoolkit-elevation-profile-` prefix:
 | `hover-line`, `hover-dot`                                  | Hover point, following the mouse.                                      |
 | `hover-badge`                                              | Badge with `hover-badge-bg`, `hover-badge-text` and `hover-badge-dot`. |
 | `selection-rect`                                           | Drag selection.                                                        |
+| `selection-line`                                           | The line within the selection, on top of `line`.                       |
 | `section-<id>`                                             | One section bar.                                                       |
 | `section-value`, `section-<id>-<value>`                    | A bar segment and the matching badge dot.                              |
 
