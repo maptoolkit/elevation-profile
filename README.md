@@ -1,8 +1,8 @@
 # elevation-profile
 
-[![License](https://img.shields.io/npm/l/@maptoolkit/elevation-profile?style=plastic)](LICENSE)
-[![Version](https://img.shields.io/npm/v/@maptoolkit/elevation-profile?style=plastic)](https://www.npmjs.com/package/@maptoolkit/elevation-profile)
-[![Downloads](https://img.shields.io/npm/dm/@maptoolkit/elevation-profile?style=plastic)](https://www.npmjs.com/package/@maptoolkit/elevation-profile)
+[![NPM](https://img.shields.io/npm/v/@maptoolkit/elevation-profile?style=for-the-badge&logo=npm&logoColor=white&labelColor=CB3837&color=555)](https://www.npmjs.com/package/@maptoolkit/elevation-profile)
+[![License](https://img.shields.io/npm/l/@maptoolkit/elevation-profile?style=for-the-badge)](https://github.com/maptoolkit/elevation-profile/blob/HEAD/LICENSE)
+[![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](https://github.com/maptoolkit/elevation-profile)
 
 A dependency-free SVG elevation profile for 3D GeoJSON lines, with hover, drag selection (ascent/descent) and optional section bars (e.g. surface or road type) below the plot. It is map-independent; events carry coordinates so it can be wired to any map.
 
@@ -204,15 +204,6 @@ Section colors are set per value via `--maptoolkit-elevation-profile-section-col
 
 > **Note:** The badge and marker layout is computed in `ElevationProfile.ts` with fixed sizes (badge font size, dot radius, marker font size). If you change those via CSS, positions and the badge background don't adapt.
 
-## Development
-
-```bash
-npm run dev    # demo with demo/example.geojson
-npm test       # vitest (jsdom)
-npm run lint
-npm run build
-```
-
 ## License
 
-**elevation-profile** is open-source under the [BSD 3-Clause License](LICENSE).
+**elevation-profile** is open-source under the [BSD 3-Clause License](https://github.com/maptoolkit/elevation-profile/blob/HEAD/LICENSE).
