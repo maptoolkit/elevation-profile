@@ -36,10 +36,16 @@ export interface ElevationProfileOptions {
    * Merged with the defaults, so single entries can be overridden.
    */
   locale: Record<string, string>;
+  /** SVG viewBox width. With height it sets the aspect ratio; fonts and margins are in these units. */
+  width: number;
+  /** SVG viewBox height. */
+  height: number;
 }
 
 export const defaultElevationProfileOptions: ElevationProfileOptions = {
   units: "metric",
+  width: 900,
+  height: 320,
   locale: {
     "surface.asphalt": "Asphalt",
     "surface.paved": "Paved",
@@ -223,6 +229,8 @@ export class ElevationProfile {
   private readonly container: HTMLElement;
   private readonly unit: UnitSystem;
   private readonly locale: Record<string, string>;
+  private readonly width: number;
+  private readonly height: number;
   private readonly clipId: string;
 
   // Drag selection stays visible until a new drag or a plain click.
@@ -238,16 +246,21 @@ export class ElevationProfile {
   // container: element or element id to render into. It may be added to the DOM later.
   constructor(container: HTMLElement | string, options: Partial<ElevationProfileOptions> = {}) {
     const element = typeof container === "string" ? document.getElementById(container) : container;
-    if (!element) throw new Error(`Element #${container} nicht gefunden.`);
+    if (!element) throw new Error(`Element #${container} not found.`);
     this.container = element;
     // Scopes the styles in style.css.
     this.container.classList.add(PREFIX);
-    const { units } = { ...defaultElevationProfileOptions, ...options };
+    const { units, width, height } = { ...defaultElevationProfileOptions, ...options };
     const locale = { ...defaultElevationProfileOptions.locale, ...options.locale };
     const unit = ElevationProfile.UNIT_SYSTEMS[units];
-    if (!unit) throw new Error(`Unbekanntes Masssystem "${units}".`);
+    if (!unit) throw new Error(`Unknown units "${units}".`);
     this.unit = unit;
     this.locale = locale;
+    for (const [name, value] of Object.entries({ width, height })) {
+      if (!(Number.isFinite(value) && value > 0)) throw new Error(`Invalid ${name} "${value}".`);
+    }
+    this.width = width;
+    this.height = height;
     this.clipId = `${PREFIX}-clip-${++ElevationProfile.instanceCount}`;
   }
 
@@ -375,7 +388,7 @@ export class ElevationProfile {
     let lines: Position[][];
     if (geometry.type === "LineString") lines = [geometry.coordinates || []];
     else if (geometry.type === "MultiLineString") lines = geometry.coordinates || [];
-    else throw new Error(`Nicht unterstützter Geometrie-Typ "${(geometry as { type?: string }).type}".`);
+    else throw new Error(`Unsupported geometry type "${(geometry as { type?: string }).type}".`);
     const samples: number[] = [];
     const coordinates: Position[] = [];
     let distances: number[] = [];
@@ -385,7 +398,7 @@ export class ElevationProfile {
     lines.forEach((line) => {
       const start = distance;
       line.forEach((c, i) => {
-        if (typeof c[2] !== "number") throw new Error(`Koordinate ${samples.length} hat keinen Höhenwert.`);
+        if (typeof c[2] !== "number") throw new Error(`Coordinate ${samples.length} has no elevation.`);
         if (i > 0) distance += ElevationProfile.distanceFromTo(line[i - 1], c);
         samples.push(c[2]);
         coordinates.push([c[0], c[1]]);
@@ -439,27 +452,26 @@ export class ElevationProfile {
     // Hover line and selection are clipped to the area under the curve.
     const clipId = this.clipId;
     const { samples, distances, distance } = profile;
-    if (!samples.length) throw new Error("Keine Höhen-Samples in der Antwort gefunden.");
+    if (!samples.length) throw new Error("No elevation samples found.");
 
-    const width = 900,
-      height = 320;
-    const sectionBar = { height: 10, gap: 4, segmentGap: 2 };
+    const { width, height } = this;
+    const sectionBar = { height: 16, gap: 6, plotGap: 8, segmentGap: 2 };
     // One bar per section below the plot, in data order.
     // The plot grows or shrinks by the bars' height, the x labels stay in place.
     const barCount = sections.length;
-    const barsHeight = barCount * (sectionBar.gap + sectionBar.height);
-    const margin: Margin = { top: 16, right: 20, bottom: 40 + (barCount - 1) * (sectionBar.gap + sectionBar.height), left: 70 };
-    // Hover badge, top right in the plot. Sizes in viewBox units, font-size must match the CSS.
+    const barsHeight = barCount ? sectionBar.plotGap + barCount * sectionBar.height + (barCount - 1) * sectionBar.gap : 0;
+    const margin: Margin = { top: 36, right: 24, bottom: 36 + barsHeight, left: 94 };
+    // Hover badge, in the top right corner of the SVG. Sizes in viewBox units, font-size must match the CSS.
     const badge: Badge = {
-      right: width - margin.right - 8,
-      top: margin.top + 8,
+      right: width - 15,
+      top: 15,
       padX: 10,
       padY: 4,
       radius: 6,
       fontSize: 18,
-      lineHeight: 27,
+      lineHeight: 31,
       dotRadius: 8,
-      dotGap: 4,
+      dotGap: 8,
     };
     const plotW = width - margin.left - margin.right;
     const plotH = height - margin.top - margin.bottom;
@@ -554,7 +566,7 @@ export class ElevationProfile {
     };
     const sectionBars = sections
       .map((section, i) => {
-        const barY = margin.top + plotH + sectionBar.gap + i * (sectionBar.height + sectionBar.gap);
+        const barY = margin.top + plotH + sectionBar.plotGap + i * (sectionBar.height + sectionBar.gap);
         const rects = barRects(section.runs, barY, (value) => ElevationProfile.sectionValueClass(section.id, value));
         return `<g class="${cls("section", `section-${ElevationProfile.cssName(section.id)}`)}">\n${rects}\n  </g>`;
       })
@@ -576,7 +588,7 @@ export class ElevationProfile {
         const xx = x(t / distFactor).toFixed(1);
         // The line at 0 is the y axis.
         return `<line class="${cls("grid-line", "grid-line-x", ...(i === 0 ? ["axis-line", "axis-line-y"] : []))}" x1="${xx}" x2="${xx}" y1="${margin.top}" y2="${margin.top + plotH}" />
-          <text class="${cls("axis-label", "axis-label-x")}" x="${xx}" y="${margin.top + plotH + barsHeight + 7}" text-anchor="middle" dominant-baseline="hanging">${t} ${unit.distance.unit}</text>`;
+          <text class="${cls("axis-label", "axis-label-x")}" x="${xx}" y="${margin.top + plotH + barsHeight + 11}" text-anchor="middle" dominant-baseline="hanging">${t} ${unit.distance.unit}</text>`;
       })
       .join("\n");
 
@@ -595,6 +607,9 @@ export class ElevationProfile {
     <clipPath id="${clipId}">
       <path d="${areaPath}" />
     </clipPath>
+    <clipPath id="${clipId}-selection">
+      <rect class="${cls("selection-clip")}" y="0" height="${height}" />
+    </clipPath>
   </defs>
   ${gridLinesY}
   ${gridLinesX}
@@ -603,6 +618,7 @@ export class ElevationProfile {
   ${sectionBars}
   ${markers}
   <rect class="${cls("selection-rect")}" y="${margin.top}" height="${plotH}" clip-path="url(#${clipId})" />
+  <path class="${cls("selection-line")}" d="${linePath}" clip-path="url(#${clipId}-selection)" />
   <line class="${cls("hover-line")}" x1="0" x2="0" y1="${margin.top}" y2="${margin.top + plotH}" clip-path="url(#${clipId})" />
   <circle class="${cls("hover-dot")}" r="4" />
   <rect class="${cls("hover-capture")}" x="${margin.left}" y="${margin.top}" width="${plotW}" height="${plotH}" fill="transparent" style="cursor: default;" />
@@ -683,6 +699,8 @@ export class ElevationProfile {
     const hoverLine = svgEl.querySelector<SVGLineElement>(`.${cls("hover-line")}`)!;
     const hoverDot = svgEl.querySelector<SVGCircleElement>(`.${cls("hover-dot")}`)!;
     const selectionRect = svgEl.querySelector<SVGRectElement>(`.${cls("selection-rect")}`)!;
+    const selectionLine = svgEl.querySelector<SVGPathElement>(`.${cls("selection-line")}`)!;
+    const selectionClip = svgEl.querySelector<SVGRectElement>(`.${cls("selection-clip")}`)!;
     const badgeEl = svgEl.querySelector<SVGGElement>(`.${cls("hover-badge")}`)!;
     const badgeBg = badgeEl.querySelector<SVGRectElement>(`.${cls("hover-badge-bg")}`)!;
     const badgeText = badgeEl.querySelector<SVGTextElement>(`.${cls("hover-badge-text")}`)!;
@@ -723,6 +741,8 @@ export class ElevationProfile {
       badgeBg.setAttribute("y", String(top - badge.padY));
       badgeBg.setAttribute("width", String(badge.right - (left - badge.padX)));
       badgeBg.setAttribute("height", String(bottom - top + 2 * badge.padY));
+      // Move the badge so its top is at badge.top whatever the CSS font-size.
+      badgeEl.setAttribute("transform", `translate(0 ${badge.top - (top - badge.padY)})`);
     };
 
     const meterAt = (evt: MouseEvent): number => {
@@ -782,6 +802,10 @@ export class ElevationProfile {
       selectionRect.setAttribute("x", String(x1));
       selectionRect.setAttribute("width", String(Math.max(0, x2 - x1)));
       selectionRect.style.display = "block";
+      // The line is clipped to the selected x range only, so its stroke isn't cut at the top.
+      selectionClip.setAttribute("x", String(x1));
+      selectionClip.setAttribute("width", String(Math.max(0, x2 - x1)));
+      selectionLine.style.display = "block";
 
       // Ascent/descent from the nearest samples, like the hover badge.
       const { ascent, descent } = ElevationProfile.ascentDescentBetween(
@@ -801,6 +825,7 @@ export class ElevationProfile {
     const clearSelection = () => {
       this.selection = null;
       selectionRect.style.display = "none";
+      selectionLine.style.display = "none";
       badgeEl.style.display = "none";
     };
 

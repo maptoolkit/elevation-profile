@@ -8,9 +8,9 @@ import {
 } from "../src/ElevationProfile";
 
 // jsdom has no SVG layout. With an identity screen CTM, clientX equals the viewBox x,
-// so the plot (viewBox 900 wide, margin left 70 / right 20) spans clientX 70..880.
-const PLOT_LEFT = 70;
-const PLOT_WIDTH = 810;
+// so the plot (viewBox 900 wide, margin left 94 / right 24) spans clientX 94..876.
+const PLOT_LEFT = 94;
+const PLOT_WIDTH = 782;
 const FT = 0.3048;
 
 type SvgProto = { createSVGPoint?: unknown; getScreenCTM?: unknown };
@@ -123,11 +123,16 @@ describe("constructor", () => {
   });
 
   it("throws for an unknown element", () => {
-    expect(() => new ElevationProfile("missing")).toThrow(/#missing nicht gefunden/);
+    expect(() => new ElevationProfile("missing")).toThrow(/#missing not found/);
   });
 
   it("throws for unknown units", () => {
-    expect(() => new ElevationProfile("profile", { units: "nautical" as never })).toThrow(/Masssystem "nautical"/);
+    expect(() => new ElevationProfile("profile", { units: "nautical" as never })).toThrow(/units "nautical"/);
+  });
+
+  it("throws for an invalid width or height", () => {
+    expect(() => new ElevationProfile("profile", { width: 0 })).toThrow(/width "0"/);
+    expect(() => new ElevationProfile("profile", { height: NaN })).toThrow(/height "NaN"/);
   });
 
   it("accepts an element", () => {
@@ -186,9 +191,18 @@ describe("not rendered container", () => {
 describe("render", () => {
   it("throws for unsupported geometry, missing elevation and empty lines", () => {
     const profile = new ElevationProfile("profile");
-    expect(() => profile.render({ geometry: { type: "Point" } } as never)).toThrow(/Geometrie-Typ "Point"/);
-    expect(() => profile.render({ geometry: { type: "LineString", coordinates: [[0, 0]] } })).toThrow(/keinen Höhenwert/);
-    expect(() => profile.render({ geometry: { type: "LineString", coordinates: [] } })).toThrow(/Keine Höhen-Samples/);
+    expect(() => profile.render({ geometry: { type: "Point" } } as never)).toThrow(/geometry type "Point"/);
+    expect(() => profile.render({ geometry: { type: "LineString", coordinates: [[0, 0]] } })).toThrow(/has no elevation/);
+    expect(() => profile.render({ geometry: { type: "LineString", coordinates: [] } })).toThrow(/No elevation samples/);
+  });
+
+  it("uses width and height as viewBox", () => {
+    create();
+    expect($("svg").getAttribute("viewBox")).toBe("0 0 900 320");
+    create({ width: 600, height: 300 });
+    expect($("svg").getAttribute("viewBox")).toBe("0 0 600 300");
+    // Plot from margin left 94 to width - margin right 24.
+    expect($(".maptoolkit-elevation-profile-hover-capture").getAttribute("width")).toBe("482");
   });
 
   it("renders metric axis labels", () => {
@@ -229,8 +243,9 @@ describe("render", () => {
     new ElevationProfile("a").render(lineFeature());
     new ElevationProfile("b").render(lineFeature());
     const ids = Array.from(document.querySelectorAll("clipPath")).map((el) => el.id);
-    expect(new Set(ids).size).toBe(2);
-    ids.forEach((id) => expect(id).toMatch(/^maptoolkit-elevation-profile-clip-\d+$/));
+    // Two per instance: area and selection.
+    expect(new Set(ids).size).toBe(4);
+    ids.forEach((id) => expect(id).toMatch(/^maptoolkit-elevation-profile-clip-\d+(-selection)?$/));
   });
 
   it("prefixes all classes", () => {
@@ -519,6 +534,13 @@ describe("methods", () => {
     const profile = create();
     expect(profile.setSelection(750, 250)).toEqual({ ascent: 60, descent: 30 });
     expect($<SVGRectElement>(".maptoolkit-elevation-profile-selection-rect").style.display).toBe("block");
+    expect($<SVGPathElement>(".maptoolkit-elevation-profile-selection-line").style.display).toBe("block");
+    const clip = $<SVGRectElement>(".maptoolkit-elevation-profile-selection-clip");
+    const rect = $<SVGRectElement>(".maptoolkit-elevation-profile-selection-rect");
+    expect(clip.getAttribute("x")).toBe(rect.getAttribute("x"));
+    expect(clip.getAttribute("width")).toBe(rect.getAttribute("width"));
+    profile.clearSelection();
+    expect($<SVGPathElement>(".maptoolkit-elevation-profile-selection-line").style.display).toBe("none");
   });
 
   it("setSelection clamps to the profile", () => {
