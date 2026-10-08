@@ -1,5 +1,17 @@
 # @maptoolkit/elevation-profile
 
+## 1.2.0
+
+### Minor Changes
+
+- 1afe3b5: Add a `selection-line` element to style the part of the line within the selection
+- 1afe3b5: Add `width` and `height` options to set the SVG viewBox size and aspect ratio
+
+### Patch Changes
+
+- 1afe3b5: Error messages are in English
+- 1afe3b5: Increase the padding around the plot so larger label font sizes are not clipped
+
 ## 1.1.0
 
 ### Minor Changes
