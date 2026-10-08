@@ -77,7 +77,7 @@
 }
 .maptoolkit-elevation-profile .maptoolkit-elevation-profile-selection-line {
   fill: none;
-  stroke: var(--maptoolkit-elevation-profile-accent);;
+  stroke: var(--maptoolkit-elevation-profile-accent);
   stroke-width: 6;
   stroke-linejoin: round;
   stroke-linecap: round;
