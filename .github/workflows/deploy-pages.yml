@@ -2,9 +2,7 @@ name: Deploy demo to GitHub Pages
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - "v*"
+  workflow_call:
 
 permissions:
   id-token: write
@@ -25,8 +23,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:demo
-        env:
-          VITE_MAPTOOLKIT_API_KEY: ${{ secrets.MAPTOOLKIT_API_KEY }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
