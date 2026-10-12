@@ -128,24 +128,28 @@ new ElevationProfile("profile", {
 ## Events
 
 ```js
-profile.on("hover", (e) => marker.setLngLat(e.lngLat));
+profile.on("hover", (e) => {
+  const [lng, lat] = e.geometry.coordinates;
+  marker.setLngLat([lng, lat]);
+});
 profile.on("hoverend", () => marker.remove());
 profile.on("selectionend", (e) => console.log(e.start, e.end, e.ascent, e.descent));
 ```
 
 `on(type, listener)`, `once(type, listener)` and `off(type, listener)` work like in MapLibre and return the profile. Every event has `type`, `target` (the profile) and `originalEvent` (the `MouseEvent`).
 
-| Event            | Data                                        | Fired when                                                             |
-| ---------------- | ------------------------------------------- | ---------------------------------------------------------------------- |
-| `hover`          | `{ distance, elevation, lngLat, sections }` | The mouse moves over the plot, while there is no selection.            |
-| `hoverend`       | —                                           | The mouse leaves the plot or a drag starts, once per hover.            |
-| `click`          | `{ distance, elevation, lngLat, sections }` | Click without drag, while there is no selection.                       |
-| `selection`      | `{ start, end, ascent, descent }`           | While dragging a selection.                                            |
-| `selectionend`   | `{ start, end, ascent, descent }`           | A drag selection ends.                                                 |
-| `selectionclear` | —                                           | Click without drag while a selection exists. No `click` is fired then. |
+| Event            | Data                                          | Fired when                                                             |
+| ---------------- | --------------------------------------------- | ---------------------------------------------------------------------- |
+| `hover`          | `{ distance, elevation, geometry, sections }` | The mouse moves over the plot, while there is no selection.            |
+| `hoverend`       | —                                             | The mouse leaves the plot or a drag starts, once per hover.            |
+| `click`          | `{ distance, elevation, geometry, sections }` | Click without drag, while there is no selection.                       |
+| `selection`      | `{ start, end, ascent, descent, geometry }`   | While dragging a selection.                                            |
+| `selectionend`   | `{ start, end, ascent, descent, geometry }`   | A drag selection ends.                                                 |
+| `selectionclear` | —                                             | Click without drag while a selection exists. No `click` is fired then. |
 
 - `distance`, `elevation`, `start`, `end`, `ascent` and `descent` are in meters, or feet with `units: "imperial"`. Values are not rounded.
-- `elevation` is the nearest sample (same as the badge); `lngLat` (`[lng, lat]`) is interpolated on the line.
+- `elevation` is the nearest sample (same as the badge).
+- `geometry` is the location as GeoJSON geometry with `[lng, lat, ele]` coordinates, `ele` in meters like the input (also with `units: "imperial"`) and interpolated on the line: a `Point` interpolated on the line for `hover` and `click`, the selected stretch of the line for `selection` and `selectionend`. The stretch has the type of the input geometry (`LineString` or `MultiLineString`, one line per part it covers).
 - `sections` maps each section id to its raw value at that point, `"other"` if not covered.
 - `start <= end`, regardless of the drag direction.
 

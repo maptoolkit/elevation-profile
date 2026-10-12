@@ -16,8 +16,10 @@
 // Badge labels: options.locale["<id>.<value>"], else the raw value.
 //
 // Events (profile.on/off/once), all distances and elevations in meters (feet for imperial):
-//   hover, click: { distance, elevation, lngLat, sections }
-//   selection (while dragging), selectionend: { start, end, ascent, descent }
+//   hover, click: { distance, elevation, geometry (Point, interpolated on the line), sections }
+//   selection (while dragging), selectionend: { start, end, ascent, descent, geometry }
+//   (geometry of the selected stretch: LineString or MultiLineString like the input)
+//   geometry coordinates are [lng, lat, ele], ele in meters like the input and interpolated on the line
 //   hoverend, selectionclear: no data
 // A click that clears a selection fires selectionclear, not click.
 // showHoverAt/hideHover/setSelection/clearSelection fire no events and use the same unit.
@@ -95,13 +97,18 @@ export interface ElevationProfileFeature {
   } | null;
 }
 
+/** GeoJSON geometries of event locations, [lng, lat, ele] with ele in meters like the input. */
+export type ElevationProfilePointGeometry = { type: "Point"; coordinates: [number, number, number] };
+export type ElevationProfileLineGeometry =
+  { type: "LineString"; coordinates: [number, number, number][] } | { type: "MultiLineString"; coordinates: [number, number, number][][] };
+
 /** A point on the profile, distance and elevation in meters (feet for imperial). */
 export interface ElevationProfilePoint {
   distance: number;
   /** Nearest sample, like the badge. */
   elevation: number;
   /** Interpolated on the line. */
-  lngLat: [number, number];
+  geometry: ElevationProfilePointGeometry;
   /** Raw value per section id, "other" if uncovered. */
   sections: Record<string, string>;
 }
@@ -112,6 +119,8 @@ export interface ElevationProfileSelection {
   end: number;
   ascent: number;
   descent: number;
+  /** The selected stretch of the line, same type as the input geometry. */
+  geometry: ElevationProfileLineGeometry;
 }
 
 export interface ElevationProfileEventMap {
@@ -143,8 +152,11 @@ interface UnitSystem {
 interface Profile {
   samples: number[];
   distances: number[];
-  // [lng, lat] per sample.
+  // [lng, lat, ele] per sample.
   coordinates: Position[];
+  // First and last sample index of each part (one part for a LineString).
+  partIndices: [number, number][];
+  multiLine: boolean;
   distance: number;
 }
 
@@ -175,6 +187,8 @@ interface SvgMeta {
   distances: number[];
   samples: number[];
   coordinates: Position[];
+  partIndices: [number, number][];
+  multiLine: boolean;
   yTicks: { min: number; max: number };
   sections: Section[];
   badge: Badge;
@@ -395,13 +409,15 @@ export class ElevationProfile {
     let distance = 0;
     // Start/end distance of each part, for part-relative section runs.
     const parts: { start: number; end: number }[] = [];
+    const partIndices: [number, number][] = [];
     lines.forEach((line) => {
       const start = distance;
+      if (line.length) partIndices.push([samples.length, samples.length + line.length - 1]);
       line.forEach((c, i) => {
         if (typeof c[2] !== "number") throw new Error(`Coordinate ${samples.length} has no elevation.`);
         if (i > 0) distance += ElevationProfile.distanceFromTo(line[i - 1], c);
         samples.push(c[2]);
-        coordinates.push([c[0], c[1]]);
+        coordinates.push([c[0], c[1], c[2]]);
         distances.push(distance);
       });
       parts.push({ start, end: distance });
@@ -438,7 +454,8 @@ export class ElevationProfile {
       });
     });
     const sections = Array.from(sectionsById, ([id, runs]) => ({ id, runs }));
-    return { profile: { samples, distances, coordinates, distance }, sections };
+    const multiLine = geometry.type === "MultiLineString";
+    return { profile: { samples, distances, coordinates, partIndices, multiLine, distance }, sections };
   }
 
   // Section value at a distance, "other" if none.
@@ -631,8 +648,11 @@ export class ElevationProfile {
 </svg>`;
 
     // Needed by setupInteraction() to map mouse position to samples.
-    const { coordinates } = profile;
-    return { svg, meta: { margin, plotW, plotH, safeDistance, distances, samples, coordinates, yTicks, sections, badge } };
+    const { coordinates, partIndices, multiLine } = profile;
+    return {
+      svg,
+      meta: { margin, plotW, plotH, safeDistance, distances, samples, coordinates, partIndices, multiLine, yTicks, sections, badge },
+    };
   }
 
   // Binary search for the sample closest to "meter".
@@ -670,13 +690,40 @@ export class ElevationProfile {
     return samples[hi - 1] + (samples[hi] - samples[hi - 1]) * t;
   }
 
-  // [lng, lat] on the line at "meter". Across MultiLineString part gaps it jumps to the next part.
-  private static interpolateLngLat(distances: number[], coordinates: Position[], meter: number): [number, number] {
+  // [lng, lat, ele] on the line at "meter". Across MultiLineString part gaps it jumps to the next part.
+  private static interpolatePosition(distances: number[], coordinates: Position[], meter: number): [number, number, number] {
     const { hi, t } = ElevationProfile.interpolationAt(distances, meter);
     const b = coordinates[hi];
-    if (hi === 0) return [b[0], b[1]];
+    if (hi === 0) return [b[0], b[1], b[2]];
     const a = coordinates[hi - 1];
-    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+  }
+
+  // The stretch of the line between "from" and "to" meters (from <= to), one array per part it touches.
+  // Parts are cut separately, so a stretch never bridges the gap between two parts.
+  private static lineBetween(
+    distances: number[],
+    coordinates: Position[],
+    partIndices: [number, number][],
+    from: number,
+    to: number,
+  ): [number, number, number][][] {
+    const lines: [number, number, number][][] = [];
+    partIndices.forEach(([first, last]) => {
+      const lo = Math.max(from, distances[first]);
+      const hi = Math.min(to, distances[last]);
+      // Skip parts the stretch doesn't reach or only touches at an end, unless the stretch is a single point.
+      if (hi < lo || (hi === lo && (from < to || lines.length > 0))) return;
+      const partDistances = distances.slice(first, last + 1);
+      const partCoordinates = coordinates.slice(first, last + 1);
+      const line = [ElevationProfile.interpolatePosition(partDistances, partCoordinates, lo)];
+      for (let i = first; i <= last; i++) {
+        if (distances[i] > lo && distances[i] < hi) line.push([coordinates[i][0], coordinates[i][1], coordinates[i][2]]);
+      }
+      line.push(ElevationProfile.interpolatePosition(partDistances, partCoordinates, hi));
+      lines.push(line);
+    });
+    return lines;
   }
 
   // Raw ascent/descent between two sample indices.
@@ -694,7 +741,7 @@ export class ElevationProfile {
   }
 
   private setupInteraction(svgEl: SVGSVGElement, meta: SvgMeta): Interaction {
-    const { margin, plotW, plotH, safeDistance, distances, samples, coordinates, yTicks, sections, badge } = meta;
+    const { margin, plotW, plotH, safeDistance, distances, samples, coordinates, partIndices, multiLine, yTicks, sections, badge } = meta;
     const capture = svgEl.querySelector<SVGRectElement>(`.${cls("hover-capture")}`)!;
     const hoverLine = svgEl.querySelector<SVGLineElement>(`.${cls("hover-line")}`)!;
     const hoverDot = svgEl.querySelector<SVGCircleElement>(`.${cls("hover-dot")}`)!;
@@ -770,7 +817,7 @@ export class ElevationProfile {
       return {
         distance: meter * lengthFactor,
         elevation: samples[nearestSampleIndex(distances, meter)] * lengthFactor,
-        lngLat: ElevationProfile.interpolateLngLat(distances, coordinates, meter),
+        geometry: { type: "Point", coordinates: ElevationProfile.interpolatePosition(distances, coordinates, meter) },
         sections: values,
       };
     };
@@ -814,11 +861,15 @@ export class ElevationProfile {
         nearestSampleIndex(distances, selection.end),
       );
       showBadge([{ text: `+ ${this.formatElevation(ascent)}` }, { text: `- ${this.formatElevation(descent)}` }]);
+      const start = Math.min(selection.start, selection.end);
+      const end = Math.max(selection.start, selection.end);
+      const lines = ElevationProfile.lineBetween(distances, coordinates, partIndices, start, end);
       return {
-        start: Math.min(selection.start, selection.end) * lengthFactor,
-        end: Math.max(selection.start, selection.end) * lengthFactor,
+        start: start * lengthFactor,
+        end: end * lengthFactor,
         ascent: ascent * lengthFactor,
         descent: descent * lengthFactor,
+        geometry: multiLine ? { type: "MultiLineString", coordinates: lines } : { type: "LineString", coordinates: lines[0] },
       };
     };
 

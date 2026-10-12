@@ -4,6 +4,8 @@ export { ElevationProfile, defaultElevationProfileOptions } from "./ElevationPro
 export type {
   ElevationProfileOptions,
   ElevationProfilePoint,
+  ElevationProfilePointGeometry,
+  ElevationProfileLineGeometry,
   ElevationProfileSelection,
   ElevationProfileEventMap,
   ElevationProfileEventType,
