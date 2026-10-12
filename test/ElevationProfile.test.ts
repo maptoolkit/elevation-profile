@@ -74,6 +74,8 @@ function create(options: Partial<ElevationProfileOptions> = {}, feature = lineFe
 const $ = <T extends Element = SVGElement>(selector: string) => document.querySelector<T>(`#profile ${selector}`)!;
 const $$ = <T extends Element = SVGElement>(selector: string) => Array.from(document.querySelectorAll<T>(`#profile ${selector}`));
 const texts = (selector: string) => $$(selector).map((el) => el.textContent);
+// Rounds nested coordinates, to compare interpolated positions.
+const round = (value: unknown): unknown => (Array.isArray(value) ? value.map(round) : Math.round((value as number) * 1e6) / 1e6);
 const badgeLines = () => texts(".maptoolkit-elevation-profile-hover-badge-text tspan");
 
 // clientX for a distance in meters on a 1000 m profile.
@@ -411,7 +413,7 @@ describe("hover badge", () => {
 });
 
 describe("events", () => {
-  it("fires hover with distance, nearest elevation, interpolated lngLat and sections", () => {
+  it("fires hover with distance, nearest elevation, interpolated Point geometry and sections", () => {
     const profile = create({}, lineFeature({ sections: [{ id: "surface", values: [{ from: 0, to: 1, value: "asphalt" }] }] }));
     const listener = vi.fn();
     profile.on("hover", listener);
@@ -422,8 +424,11 @@ describe("events", () => {
     expect(e.originalEvent).toBe(evt);
     expect(e.distance).toBeCloseTo(300, 6);
     expect(e.elevation).toBe(150);
-    expect(e.lngLat[0]).toBeCloseTo(0.12, 6);
-    expect(e.lngLat[1]).toBeCloseTo(0, 6);
+    expect(e.geometry.type).toBe("Point");
+    expect(e.geometry.coordinates[0]).toBeCloseTo(0.12, 6);
+    expect(e.geometry.coordinates[1]).toBeCloseTo(0, 6);
+    // Interpolated between 150 m at 250 and 120 m at 500, unlike the nearest-sample elevation.
+    expect(e.geometry.coordinates[2]).toBeCloseTo(144, 6);
     expect(e.sections).toEqual({ surface: "asphalt" });
   });
 
@@ -460,6 +465,65 @@ describe("events", () => {
     expect(e.end).toBeCloseTo(750, 6);
     expect(e.ascent).toBe(60);
     expect(e.descent).toBe(30);
+  });
+
+  it("fires selectionend with the selected stretch as 3D LineString", () => {
+    const profile = create();
+    const listener = vi.fn();
+    profile.on("selectionend", listener);
+    drag(125, 625);
+    const { geometry } = listener.mock.calls[0][0];
+    expect(geometry.type).toBe("LineString");
+    expect(round(geometry.coordinates)).toEqual([
+      [0.05, 0, 125],
+      [0.1, 0, 150],
+      [0.2, 0, 120],
+      [0.25, 0, 150],
+    ]);
+  });
+
+  it("fires selectionend with one line per covered part for a MultiLineString", () => {
+    // Two parts of equal length: 0..500 m and 500..1000 m.
+    const profile = create(
+      {},
+      {
+        geometry: {
+          type: "MultiLineString",
+          coordinates: [
+            [
+              [0, 0, 100],
+              [0.2, 0, 110],
+            ],
+            [
+              [1, 0, 120],
+              [1.2, 0, 130],
+            ],
+          ],
+        },
+        properties: { length: 1000 },
+      },
+    );
+    const listener = vi.fn();
+    profile.on("selectionend", listener);
+    drag(250, 750);
+    expect(listener.mock.calls[0][0].geometry.type).toBe("MultiLineString");
+    expect(round(listener.mock.calls[0][0].geometry.coordinates)).toEqual([
+      [
+        [0.1, 0, 105],
+        [0.2, 0, 110],
+      ],
+      [
+        [1, 0, 120],
+        [1.1, 0, 125],
+      ],
+    ]);
+    drag(100, 400);
+    expect(round(listener.mock.calls[1][0].geometry.coordinates)).toEqual([
+      [
+        [0.04, 0, 102],
+        [0.16, 0, 108],
+      ],
+    ]);
   });
 
   it("orders start and end when dragging to the left", () => {
